@@ -3,54 +3,34 @@
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-from matplotlib.dates import MONDAY, DateFormatter, DayLocator, WeekdayLocator
-from matplotlib.pylab import date2num
-import datetime
 import mpl_finance as mpf
+import pandas as pd
 import tushare as ts
 
+quotes = ts.get_k_data('002739', '2017-01-01')
+quotes.info()
 
-date1 = "2017-1-1"
-date2 = "2017-1-10"
+print(quotes[:3])
 
-mondays = WeekdayLocator(MONDAY)        # major ticks on the mondays
-alldays = DayLocator()              # minor ticks on the days
-weekFormatter = DateFormatter('%b %d')  # e.g., Jan 12
-dayFormatter = DateFormatter('%d')      # e.g., 12
-
-wdyx = ts.get_k_data('002739','2017-01-01')
-wdyx.info()
-
-wdyx[:3]
-
-# 对tushare获取到的数据转换成candlestick_ohlc()方法可读取的格式
 '''
-data_list = []
-for dates,row in hist_data.iterrows():
-    # 将时间转换为数字
-    date_time = datetime.datetime.strptime(dates,'%Y-%m-%d')
-    t = date2num(date_time)
-    open,high,low,close = row[:4]
-    datas = (t,open,high,low,close)
-    data_list.append(datas)
+DataFrame returned from tushare has below format:
+         date    open   close    high     low    volume    code
+0  2017-01-03  54.010  54.070  54.110  53.711   30518.0  002739
+1  2017-01-04  54.090  56.691  56.771  53.831  103953.0  002739
+2  2017-01-05  56.302  56.591  57.080  55.924   65414.0  002739
 '''
-def date_to_num(dates):
-    num_time = []
-    for date in dates:
-        date_time = datetime.datetime.strptime(date,'%Y-%m-%d')
-        num_date = date2num(date_time)
-        num_time.append(num_date)
-    return num_time
-# dataframe转换为二维数组
-mat_wdyx = wdyx.as_matrix()
-num_time = date_to_num(mat_wdyx[:,0])
-mat_wdyx[:,0] = num_time
-#         日期,   开盘,     收盘,    最高,      最低,   成交量,    代码
-mat_wdyx[:3]
 
-fig, ax = plt.subplots(figsize=(15,5))
+# Get Numpy representation of NDFrame.
+quotes_values = quotes.values
+
+# Convert to float days format for candlestick_ochl.
+quotes_values[..., 0] = mdates.date2num(pd.DatetimeIndex(quotes['date']).to_pydatetime())
+
+print(quotes_values[:3])
+
+fig, ax = plt.subplots(figsize=(15, 5))
 fig.subplots_adjust(bottom=0.5)
-mpf.candlestick_ochl(ax, mat_wdyx, width=0.6, colorup='g', colordown='r', alpha=1.0)
+mpf.candlestick_ochl(ax, quotes_values, width=0.6, colorup='g', colordown='r', alpha=1.0)
 plt.grid(True)
 # 设置日期刻度旋转的角度
 plt.xticks(rotation=30)
@@ -58,10 +38,10 @@ plt.title('wanda yuanxian 17')
 plt.xlabel('Date')
 plt.ylabel('Price')
 # x轴的刻度为日期
-ax.xaxis_date ()
+ax.xaxis_date()
 ###candlestick_ochl()函数的参数
 # ax 绘图Axes的实例
-# mat_wdyx 价格历史数据
+# mat_quotes 价格历史数据
 # width    图像中红绿矩形的宽度,代表天数
 # colorup  收盘价格大于开盘价格时的颜色
 # colordown   低于开盘价格时矩形的颜色
