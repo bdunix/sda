@@ -7,7 +7,10 @@ import mpl_finance as mpf
 import pandas as pd
 import tushare as ts
 
-quotes = ts.get_k_data('002739', '2017-01-01')
+code = '002739'
+date = '2017-01-01'
+quotes = ts.get_k_data(code, date)
+
 quotes.info()
 
 print(quotes[:3])
@@ -28,23 +31,17 @@ quotes_values[..., 0] = mdates.date2num(pd.DatetimeIndex(quotes['date']).to_pyda
 
 print(quotes_values[:3])
 
-fig, ax = plt.subplots(figsize=(15, 5))
-fig.subplots_adjust(bottom=0.5)
+fig, ax = plt.subplots(figsize=(12, 4))
+fig.subplots_adjust(bottom=0.2)
+
 mpf.candlestick_ochl(ax, quotes_values, width=0.6, colorup='g', colordown='r', alpha=1.0)
-plt.grid(True)
-# 设置日期刻度旋转的角度
-plt.xticks(rotation=30)
-plt.title('wanda yuanxian 17')
+
+plt.title(code)
 plt.xlabel('Date')
 plt.ylabel('Price')
-# x轴的刻度为日期
+plt.grid(True)
+plt.xticks(rotation=20)
+
 ax.xaxis_date()
-###candlestick_ochl()函数的参数
-# ax 绘图Axes的实例
-# mat_quotes 价格历史数据
-# width    图像中红绿矩形的宽度,代表天数
-# colorup  收盘价格大于开盘价格时的颜色
-# colordown   低于开盘价格时矩形的颜色
-# alpha      矩形的颜色的透明度
 
 plt.show()
