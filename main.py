@@ -4,6 +4,7 @@
 # Remote data access of pandas:
 # https://pandas-datareader.readthedocs.io/en/latest/remote_data.html
 
+import pandas as pd
 import pandas_datareader.data as web
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ import numpy as np
 
 if __name__ == "__main__":
     start = datetime(2016, 1, 4)
-    #end = datetime.today()
+    # end = datetime.today()
     end = datetime(2016, 9, 1)
     apple = web.DataReader('AAPL', 'morningstar', start, end)
 
@@ -47,4 +48,34 @@ if __name__ == "__main__":
     apple = apple.reset_index(level='Symbol')
 
     apple.loc['2016-01-04':'2016-08-07', "Regime"].plot(ylim=(-2, 2)).axhline(y=0, color="black", lw=2)
-    plt.show()
+
+    # To ensure that all trades close out, I temporarily change the regime of the last row to 0
+    regime_orig = apple.ix[-1, 'Regime']
+    apple.ix[-1, 'Regime'] = 0
+    apple['Signal'] = np.sign(apple['Regime'] - apple['Regime'].shift(1))
+    # Restore original regime data
+    apple.ix[-1, 'Regime'] = regime_orig
+
+    print(apple.tail())
+
+    apple["Signal"].plot(ylim=(-2, 2))
+    # plt.show()
+
+    # Create a DataFrame with trades, including the price at the trade and the regime under which the trade is made.
+    apple_signals = pd.concat([pd.DataFrame({"Price": apple.loc[apple["Signal"] == 1, "Close"],
+                                             "Regime": apple.loc[apple["Signal"] == 1, "Regime"],
+                                             "Signal": "Buy"}),
+                               pd.DataFrame({"Price": apple.loc[apple["Signal"] == -1, "Close"],
+                                             "Regime": apple.loc[apple["Signal"] == -1, "Regime"],
+                                             "Signal": "Sell"})])
+    apple_signals.sort_index(inplace=True)
+    print(apple_signals)
+
+    # Let's see the profitability of long trades
+    apple_long_profits = pd.DataFrame({
+        "Price": apple_signals.loc[(apple_signals["Signal"] == "Buy") & apple_signals["Regime"] == 1, "Price"],
+        "Profit": pd.Series(apple_signals["Price"] - apple_signals["Price"].shift(1)).loc[apple_signals.loc[
+            (apple_signals["Signal"].shift(1) == "Buy") & (apple_signals["Regime"].shift(1) == 1)].index].tolist(),
+        "End Date": apple_signals["Price"].loc[apple_signals.loc[
+            (apple_signals["Signal"].shift(1) == "Buy") & (apple_signals["Regime"].shift(1) == 1)].index].index})
+    print(apple_long_profits)
